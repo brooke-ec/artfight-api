@@ -1,6 +1,6 @@
 [flake8]
 ban-relative-imports = true
-max-line-length = 92
+max-line-length = 100
 extend-ignore =
     LN002,
     E501,
