@@ -54,7 +54,7 @@ class HTTPClient:
         *,
         form: Optional[Dict[str, Any]] = None,
         authenticated: bool = True,
-    ) -> Optional[str]:
+    ) -> str:
         """Wraps aiohttp requests
 
         Parameters
@@ -68,8 +68,8 @@ class HTTPClient:
 
         Returns
         -------
-        str | None
-            The HTML returned by the request, None if the response was a redirect.
+        str
+            The HTML returned by the request.
 
         Raises
         ------
@@ -139,7 +139,7 @@ class HTTPClient:
                         location = response.headers.get("Location")
                         if location == Route("GET", "/login").url:
                             raise error.UnauthorizedError(route)
-                        return None
+                        return ""
 
                     # unconditional retry
                     if response.status in (500, 502, 504, 524):
