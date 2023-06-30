@@ -3,29 +3,19 @@ from __future__ import annotations
 import asyncio
 import logging
 import sys
-from typing import Any, Dict, Literal, Optional, Union
+from typing import Any, Dict, Optional, Union
 from urllib import parse as urlparse
 
 import aiohttp
 
 from artfight import __version__, error
+from artfight.util import Method
 
 _log = logging.getLogger(__name__)
 
-Method = Union[Literal["GET"], Literal["POST"], Literal["PUT"], Literal["DELETE"]]
-
-_RETRY_ATTEMPTS = 5
-_SESSION_COOKIE = "laravel_session"
-
-
-class Route:
-    """Represents an Artfight route"""
-
-    BASE: str = "https://artfight.net/"
-
-    def __init__(self, method: Method, path: str, *args: str) -> None:
-        self.url = urlparse.urljoin(self.BASE, path % args)
-        self.method = method
+RETRY_ATTEMPTS = 5
+SESSION_COOKIE = "laravel_session"
+BASE_URL = "https://artfight.net/"
 
 
 class HTTPClient:
@@ -50,7 +40,8 @@ class HTTPClient:
 
     async def request(
         self,
-        route: Route,
+        method: Method,
+        url: str,
         *,
         form: Optional[Dict[str, Any]] = None,
         authenticated: bool = True,
@@ -86,13 +77,12 @@ class HTTPClient:
         RuntimeError
             Raised when the HTTP connection has not been initialised.
         """
-        method = route.method
-        url = route.url
+        url = urlparse.urljoin(BASE_URL, url)
         data = None
 
         # ensure Client is setup
         if self._client is None:
-            raise RuntimeError("HTTP connection not open")
+            raise RuntimeError("HTTP connection not initalised")
 
         # initialise headers
         headers: dict[str, str] = {
@@ -104,28 +94,28 @@ class HTTPClient:
             if authenticated:
                 raise error.NotAuthenticated()
         else:
-            headers["Cookie"] = f"{_SESSION_COOKIE}={self._session}"
+            headers["Cookie"] = f"{SESSION_COOKIE}={self._session}"
 
         # add form data if applicable
         if form is not None:
             data = aiohttp.FormData(form)
 
         response = None
-        for tries in range(_RETRY_ATTEMPTS):
+        for tries in range(RETRY_ATTEMPTS):
             await asyncio.sleep(tries * 2)
 
             try:
                 async with self._client.request(
                     allow_redirects=False,
-                    method=route.method,
+                    method=method,
                     headers=headers,
-                    url=route.url,
                     data=data,
+                    url=url,
                 ) as response:
                     _log.debug("%s %s : %s", method, url, response.status)
 
                     # update session
-                    token = response.cookies.get(_SESSION_COOKIE)
+                    token = response.cookies.get(SESSION_COOKIE)
                     if token is not None:
                         self._session = token.value
 
@@ -137,9 +127,10 @@ class HTTPClient:
                     if response.status == 302:
                         # check redirected to login (unauthorized)
                         location = response.headers.get("Location")
-                        if location == Route("GET", "/login").url:
-                            raise error.UnauthorizedError(route)
-                        return ""
+                        if location is not None:
+                            if location.endswith("/login"):
+                                raise error.UnauthorizedError(method, url)
+                            return location
 
                     # unconditional retry
                     if response.status in (500, 502, 504, 524):
@@ -147,11 +138,11 @@ class HTTPClient:
 
                     # special errors
                     elif response.status == 404:
-                        raise error.NotFoundError(route)
+                        raise error.NotFoundError(method, url)
                     elif response.status >= 500:
-                        raise error.ArtfightServerError(route)
+                        raise error.ArtfightServerError(method, url)
                     else:
-                        raise error.HTTPResponseError(route, response.status)
+                        raise error.HTTPResponseError(method, url, response.status)
 
             except OSError as e:
                 # connection reset
@@ -162,8 +153,8 @@ class HTTPClient:
         if response is not None:
             # We've run out of retries, raise.
             if response.status >= 500:
-                raise error.ArtfightServerError(route)
-            raise error.HTTPResponseError(route, response.status)
+                raise error.ArtfightServerError(method, url)
+            raise error.HTTPResponseError(method, url, response.status)
 
         raise RuntimeError("_RETRY_ATTEMPTS was < 1")
 
@@ -179,17 +170,18 @@ class HTTPClient:
 
         Raises
         ------
-        ValueError
-            Raised when the specified credentials are invalid
+        LoginError
+            Raised when the provided credentials are invalid
         """
         if self._client is None:
             self._client = aiohttp.ClientSession()
 
         try:
             await self.request(
-                Route("POST", "/login"),
+                "POST",
+                "/login",
                 authenticated=False,
                 form={"username": username, "password": password},
             )
         except error.UnauthorizedError:
-            raise ValueError("Invalid login credentials")
+            raise error.LoginError()

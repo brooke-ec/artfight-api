@@ -32,8 +32,8 @@ class ArtfightClient:
 
         Raises
         ------
-        ValueError
-            Raised when the specified credentials are invalid
+        LoginError
+            Raised when the provided credentials are invalid
         """
         await self.http.login(username, password)
 
