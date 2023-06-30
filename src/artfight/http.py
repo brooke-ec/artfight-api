@@ -19,13 +19,23 @@ BASE_URL = "https://artfight.net/"
 
 
 class HTTPClient:
-    """HTTPClient handles all the HTTP requests performed by artfight-api"""
+    """HTTPClient handles all the HTTP requests performed by artfight-api
 
-    def __init__(self) -> None:
+    Parameters
+        ----------
+        username : str
+            The username to log in with.
+        password : str
+            The password to log in with.
+    """
+
+    def __init__(self, username: str, password: str) -> None:
         user_agent = "Artfight Bot (https://github.com/NimajnebEC/artfight-api v{0}) Python/{1[0]}.{1[1]} aiohttp/{2}"
         self.user_agent: str = user_agent.format(__version__, sys.version_info, aiohttp.__version__)
         self._client: Union[aiohttp.ClientSession, None] = None
         self._session: Union[str, None] = None
+        self._username: str = username
+        self._password: str = password
 
     async def __aenter__(self) -> HTTPClient:
         return self
@@ -60,7 +70,7 @@ class HTTPClient:
         Returns
         -------
         str
-            The HTML returned by the request.
+            The HTML returned by the request or the redirect destination.
 
         Raises
         ------
@@ -80,19 +90,20 @@ class HTTPClient:
         url = urlparse.urljoin(BASE_URL, url)
         data = None
 
-        # ensure Client is setup
+        # ensure client is set up
         if self._client is None:
-            raise RuntimeError("HTTP connection not initalised")
+            self._client = aiohttp.ClientSession()
 
         # initialise headers
         headers: dict[str, str] = {
             "User-Agent": self.user_agent,
         }
 
-        # add session cookie if exists
+        # add session cookie
         if self._session is None:
             if authenticated:
-                raise error.NotAuthenticated()
+                _log.debug("Session not found; logging in...")
+                await self.login()
         else:
             headers["Cookie"] = f"{SESSION_COOKIE}={self._session}"
 
@@ -129,6 +140,12 @@ class HTTPClient:
                         location = response.headers.get("Location")
                         if location is not None:
                             if location.endswith("/login"):
+                                # login and try again
+                                if authenticated:
+                                    _log.debug("Unauthorized response recieved; logging in and trying again...")
+                                    await self.login()
+                                    tries -= 0
+                                    continue
                                 raise error.UnauthorizedError(method, url)
                             return location
 
@@ -158,30 +175,20 @@ class HTTPClient:
 
         raise RuntimeError("_RETRY_ATTEMPTS was < 1")
 
-    async def login(self, username: str, password: str) -> None:
+    async def login(self) -> None:
         """Login to the artfight servers using the specified credentials
-
-        Parameters
-        ----------
-        username : str
-            The username to log in with
-        password : str
-            The password to log in with
 
         Raises
         ------
         LoginError
             Raised when the provided credentials are invalid
         """
-        if self._client is None:
-            self._client = aiohttp.ClientSession()
-
         try:
             await self.request(
                 "POST",
                 "/login",
                 authenticated=False,
-                form={"username": username, "password": password},
+                form={"username": self._username, "password": self._password},
             )
         except error.UnauthorizedError:
             raise error.LoginError()

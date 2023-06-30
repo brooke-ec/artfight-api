@@ -7,7 +7,6 @@ __all__ = (
     "HTTPError",
     "NotFoundError",
     "ArtfightServerError",
-    "NotAuthenticated",
     "HTTPResponseError",
 )
 
@@ -30,10 +29,6 @@ class ParseError(ArtfightError):
 
 class HTTPError(ArtfightError):
     """There was an error making the HTTP request"""
-
-
-class NotAuthenticated(HTTPError):
-    """The client tried to make an authenticated request but is not authenticated"""
 
 
 class HTTPResponseError(HTTPError):

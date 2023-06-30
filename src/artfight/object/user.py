@@ -41,9 +41,9 @@ class PartialUser(ArtfightObject[str, "User"]):
 class User(PartialUser):
     def __init__(self, id: str, http: HTTPClient) -> None:
         super().__init__(id, http)
-
         self._date_joined: datetime
         self._last_seen: datetime
+        self.avatar: str
         self._team: str
 
     @property
