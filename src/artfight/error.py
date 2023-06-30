@@ -1,7 +1,6 @@
-from typing import TYPE_CHECKING, Union
+from typing import Union
 
-if TYPE_CHECKING:
-    from artfight.http import Route
+from artfight.util import Method
 
 __all__ = (
     "ArtfightError",
@@ -21,6 +20,14 @@ class ArtfightError(Exception):
         super().__init__(*message)
 
 
+class LoginError(ArtfightError):
+    """The provided login credentials were not accepted by the server"""
+
+
+class ParseError(ArtfightError):
+    """There was an error parsing markdown"""
+
+
 class HTTPError(ArtfightError):
     """There was an error making the HTTP request"""
 
@@ -32,12 +39,19 @@ class NotAuthenticated(HTTPError):
 class HTTPResponseError(HTTPError):
     """An error was caused by the request's response"""
 
-    def __init__(self, route: "Route", status: Union[int, None] = None, *args: object) -> None:
-        if status is not None and type(self) == HTTPError:
-            super().__init__(f"{status} - Error making request")
+    def __init__(
+        self,
+        method: Method,
+        url: str,
+        status: Union[int, None] = None,
+        *args: object,
+    ) -> None:
+        if status is not None:
+            super().__init__(f"{method} {url} - Error {status}")
         else:
-            super().__init__()
-        self.route = route
+            super().__init__(*args)
+        self.method: Method = method
+        self.url: str = url
 
 
 class UnauthorizedError(HTTPError):

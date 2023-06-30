@@ -1,35 +1,41 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from bs4 import BeautifulSoup, ResultSet, Tag
 
-from artfight.http import HTTPClient, Route
+from artfight.http import HTTPClient
 from artfight.object.abc import ArtfightObject
+from artfight.parser import BaseParser
 from artfight.util import DATE_FORMAT
 
 __all__ = ("PartialUser", "User")
 
 
-class PartialUser(ArtfightObject[str]):
+class ProfileParser(BaseParser["User"]):
+    _ROUTE = "/~%s"
+
+    def parse(self, data: str, *args: Any) -> User:
+        result = User(args[0], self.http)
+        soup = BeautifulSoup(data, features="html.parser")
+        card = soup.select_one(
+            ".profile-header > .profile-header-mobile-status > .card > .card-body"
+        )
+        info: ResultSet[Tag] = card.find_all("p", {"class": "text-right"})  # type: ignore
+        result._date_joined = datetime.strptime(info[0].find("span").attrs.get("title"), DATE_FORMAT)  # type: ignore
+        result._last_seen = datetime.strptime(info[1].text, DATE_FORMAT)
+        result._team = info[2].text
+
+        return result
+
+
+class PartialUser(ArtfightObject[str, "User"]):
+    _PARSER = ProfileParser
+
     @property
     def name(self) -> str:
         return self.id
-
-    async def fetch(self) -> User:
-        data = await self.http.request(Route("GET", "/~%s", self.name))
-        i = User(self.name, self.http)
-        soup = BeautifulSoup(data, features="html.parser")
-
-        # fmt: off
-        card = soup.select_one(".profile-header > .profile-header-mobile-status > .card > .card-body")
-        info: ResultSet[Tag] = card.find_all("p", {"class": "text-right"})  # type: ignore
-        i._date_joined = datetime.strptime(info[0].find("span").attrs.get("title"), DATE_FORMAT)  # type: ignore
-        i._last_seen = datetime.strptime(info[1].text, DATE_FORMAT)
-        i._team = info[2].text
-        # fmt: on
-
-        return i
 
 
 class User(PartialUser):
