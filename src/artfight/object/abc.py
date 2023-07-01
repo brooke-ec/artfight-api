@@ -20,6 +20,9 @@ class ArtfightObject(ABC, Generic[T, F]):
     def __eq__(self, __value: object) -> bool:
         return isinstance(__value, type(self)) and self.id == __value.id
 
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} id={repr(self.id)}>"
+
     @property
     def id(self) -> T:
         """The unique identifier for this object."""
