@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, AsyncIterator, Dict, List, Tuple
+from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, List, Tuple
 
 from bs4 import BeautifulSoup, ResultSet, Tag
 
@@ -9,7 +9,10 @@ from artfight.http import HTTPClient
 from artfight.object import attack
 from artfight.object.abc import ArtfightObject
 from artfight.parser import BaseParser
-from artfight.util import DATE_FORMAT, RE_BACKGROUND_IMAGE
+from artfight.util import DATE_FORMAT, RE_BACKGROUND_IMAGE, table_to_dict
+
+if TYPE_CHECKING:
+    from artfight.object.attack import PartialAttack
 
 __all__ = ("PartialUser", "User")
 
@@ -23,7 +26,7 @@ class ProfileParser(BaseParser["User"]):
         header = soup.select_one(".profile-header")
 
         # Extract Avatar
-        icon = soup.find("span", {"class": "icon-user"})
+        icon = header.find("span", {"class": "icon-user"})  # type: ignore
         result._avatar = RE_BACKGROUND_IMAGE.search(icon.attrs.get("style")).group(1)  # type: ignore
 
         card = header.select_one(".profile-header-mobile-status > .card > .card-body")  # type: ignore
@@ -41,17 +44,15 @@ class ProfileParser(BaseParser["User"]):
 
         # Extract Links
         result._links = {}
-        links: ResultSet[Tag] = soup.select_one(".profile-links").find_all("tr", recursive=False)  # type: ignore
-        for link in links:
-            cells: ResultSet[Tag] = link.find_all("td", recursive=False)
-            site = cells[0].strong.text  # type: ignore
-            url = cells[1].a.attrs["href"]  # type: ignore
+        links: ResultSet[Tag] = soup.select_one(".profile-links").find("table")  # type: ignore
+        for site, cell in table_to_dict(links).items():  # type: ignore
+            url = cell.a.attrs["href"]  # type: ignore
             result._links[site] = url
 
         return result
 
 
-class AttackListParser(BaseParser[Tuple[List[attack.PartialAttack], bool]]):
+class AttackListParser(BaseParser[Tuple[List["PartialAttack"], bool]]):
     _ROUTE = "/~%s/attacks?page=%s"
 
     def parse(self, data: str, *args: Any) -> Tuple[List[attack.PartialAttack], bool]:
@@ -78,9 +79,6 @@ class AttackListParser(BaseParser[Tuple[List[attack.PartialAttack], bool]]):
 class PartialUser(ArtfightObject[str, "User"]):
     _PARSER = ProfileParser
     _URL = "/~%s"
-
-    def __init__(self, id: str, http: HTTPClient) -> None:
-        super().__init__(id, http)
 
     @property
     def name(self) -> str:

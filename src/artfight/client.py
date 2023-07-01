@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from artfight.http import HTTPClient
-from artfight.object import PartialUser, User
+from artfight.object import Attack, PartialAttack, PartialUser, User
 
 __all__ = ("ArtfightClient",)
 
@@ -25,3 +25,9 @@ class ArtfightClient:
 
     async def fetch_user(self, name: str) -> User:
         return await self.get_user(name).fetch()
+
+    def get_attack(self, id: int) -> PartialAttack:
+        return PartialAttack(id, self.http)
+
+    async def fetch_attack(self, id: int) -> Attack:
+        return await self.get_attack(id).fetch()
