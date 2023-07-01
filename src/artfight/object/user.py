@@ -77,6 +77,7 @@ class AttackListParser(BaseParser[Tuple[List[attack.PartialAttack], bool]]):
 
 class PartialUser(ArtfightObject[str, "User"]):
     _PARSER = ProfileParser
+    _URL = "/~%s"
 
     def __init__(self, id: str, http: HTTPClient) -> None:
         super().__init__(id, http)

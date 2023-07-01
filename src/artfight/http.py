@@ -17,6 +17,28 @@ SESSION_COOKIE = "laravel_session"
 BASE_URL = "https://artfight.net/"
 
 
+def join_url(base: str, route: str) -> str:
+    """Joins two urls ensuring there is only one slash in between them.
+
+    Parameters
+    ----------
+    base : str
+        The base url to join to.
+    route : str
+        The route to join to the base url.
+
+    Returns
+    -------
+    str
+        The merged url.
+    """
+    if base.endswith("/"):
+        base = base[:-1]
+    if route.startswith("/"):
+        route = route[1:]
+    return base + "/" + route
+
+
 class HTTPClient:
     """HTTPClient handles all the HTTP requests performed by artfight-api
 
@@ -46,28 +68,6 @@ class HTTPClient:
         """Closes the HTTP connection if it exists."""
         if self._client is not None:
             await self._client.close()
-
-    @staticmethod
-    def join_url(base: str, route: str) -> str:
-        """Joins two urls ensuring there is only one slash in between them.
-
-        Parameters
-        ----------
-        base : str
-            The base url to join to.
-        route : str
-            The route to join to the base url.
-
-        Returns
-        -------
-        str
-            The merged url.
-        """
-        if base.endswith("/"):
-            base = base[:-1]
-        if route.startswith("/"):
-            route = route[1:]
-        return base + "/" + route
 
     async def request(
         self,
@@ -108,7 +108,7 @@ class HTTPClient:
         RuntimeError
             Raised when the HTTP connection has not been initialised.
         """
-        url = self.join_url(BASE_URL, url)
+        url = join_url(BASE_URL, url)
         data = None
 
         # ensure client is set up

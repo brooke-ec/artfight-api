@@ -20,6 +20,7 @@ class AttackParser(BaseParser["Attack"]):
 
 class PartialAttack(ArtfightObject[int, "Attack"]):
     _PARSER = AttackParser
+    _URL = "/attack/%s"
 
 
 class Attack(PartialAttack):
