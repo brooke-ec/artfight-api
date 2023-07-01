@@ -11,10 +11,21 @@ T = TypeVar("T")
 
 
 class ArtfightObject(ABC, Generic[T, F]):
+    """Represents a structure from the artfight website."""
+
     _PARSER: Type[BaseParser[F]]
     _URL: str
 
     def __init__(self, id: T, http: HTTPClient) -> None:
+        """Represents a structure from the artfight website.
+
+        Parameters
+        ----------
+        id : T
+            The unique identifier used to represent this object.
+        http : HTTPClient
+            An `HTTPClient` instance.
+        """
         self._http: HTTPClient = http
         self._id: T = id
 

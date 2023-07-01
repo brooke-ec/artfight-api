@@ -77,6 +77,8 @@ class AttackListParser(BaseParser[Tuple[List["PartialAttack"], bool]]):
 
 
 class PartialUser(ArtfightObject[str, "User"]):
+    """Represents an Artfight user that does not have all data present."""
+
     _PARSER = ProfileParser
     _URL = "/~%s"
 
@@ -104,6 +106,8 @@ class PartialUser(ArtfightObject[str, "User"]):
 
 
 class User(PartialUser):
+    """Represents an Artfight user."""
+
     def __init__(self, id: str, http: HTTPClient) -> None:
         super().__init__(id, http)
         self._last_seen: datetime | None

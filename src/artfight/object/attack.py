@@ -76,11 +76,15 @@ class AttackParser(BaseParser["Attack"]):
 
 
 class PartialAttack(ArtfightObject[int, "Attack"]):
+    """Represents an Artfight attack that does not have all data present."""
+
     _PARSER = AttackParser
     _URL = "/attack/%s"
 
 
 class Attack(PartialAttack):
+    """Represents an Artfight attack."""
+
     def __init__(self, id: int, http: HTTPClient) -> None:
         super().__init__(id, http)
         self._characters: List[PartialCharacter]
