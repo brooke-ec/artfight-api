@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import Generic, Type, TypeVar
+from typing import Any, Generic, Optional, Type, TypeVar
 
 from artfight.http import BASE_URL, HTTPClient, join_url
 from artfight.parser import BaseParser
@@ -34,6 +34,23 @@ class ArtfightObject(ABC, Generic[T, F]):
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} id={repr(self.id)}>"
+
+    def _get_attr(self, name: str) -> Optional[Any]:
+        """Returns the specified attribute if it exists.
+
+        Parameters
+        ----------
+        name : str
+            The name of the attribute to get.
+
+        Returns
+        -------
+        Optional[Any]
+            The attribute, or `None` if it doesn't exist.
+        """
+        if hasattr(self, name):
+            return getattr(self, name)
+        return None
 
     @property
     def id(self) -> T:

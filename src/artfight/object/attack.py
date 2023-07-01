@@ -62,6 +62,7 @@ class AttackParser(BaseParser["Attack"]):
             if match is None:
                 continue
             char = PartialCharacter(int(match.group(1)), self.http)
+            char._name = link.i.text  # type: ignore
             if char not in result._characters:
                 result._characters.append(char)
 
