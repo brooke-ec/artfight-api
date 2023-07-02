@@ -28,6 +28,9 @@ class AttackParser(BaseParser["Attack"]):
         soup = BeautifulSoup(data, "html.parser")
         header = soup.select_one(".profile-header")
 
+        # Extract Title
+        result._title = header.select_one(".profile-header-name").a.u.text  # type: ignore
+
         # Extract Thumbnail
         icon = header.find("span", {"class": "icon-attack"})  # type: ignore
         result._thumbnail = RE_BACKGROUND_IMAGE.search(icon.attrs.get("style")).group(1)  # type: ignore
@@ -70,7 +73,7 @@ class AttackParser(BaseParser["Attack"]):
         stats_tag = soup.find("div", {"class": "card-header"}, string="Attack Stats").parent.find("table")  # type: ignore
         stats = table_to_dict(stats_tag)  # type: ignore
 
-        result._points = int(stats["Points"].text)
+        result._points = float(stats["Points"].find(text=True, recursive=False).strip())  # type: ignore
         result._type = stats["Type"].text
 
         return result
@@ -93,7 +96,7 @@ class Attack(PartialAttack):
         self._defender: user.PartialUser
         self._date_submitted: datetime
         self._thumbnail: str
-        self._points: int
+        self._points: float
         self._title: str
         self._type: str
         self._image: str
@@ -125,7 +128,7 @@ class Attack(PartialAttack):
         return self._thumbnail
 
     @property
-    def points(self) -> int:
+    def points(self) -> float:
         """The number of points this attack rewarded the attacker's team."""
         return self._points
 

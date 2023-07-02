@@ -9,6 +9,8 @@ from artfight.object.abc import ArtfightObject
 class PartialCharacter(ArtfightObject[int, "Character"]):
     """Represents an Artfight character that does not have all data present."""
 
+    _URL = "/character/%s"
+
     def __init__(self, id: int, http: HTTPClient) -> None:
         super().__init__(id, http)
         self._name: str
