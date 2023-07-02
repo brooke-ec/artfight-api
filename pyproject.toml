@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "artfight-api"
-version = "0.1.0"
+version = "0.1.1"
 description = "A module for retrieving data from artfight.net"
 authors = ["NimajnebEC <nimajnebec@users.noreply.github.com>"]
 repository = "https://github.com/NimajnebEC/artfight-api"
