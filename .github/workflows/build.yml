@@ -24,7 +24,7 @@ jobs:
           python-version: "3.8.x"
 
       - name: Install Poetry
-        uses: abatilo/actions-poetry@v2.1.6
+        uses: snok/install-poetry@v1
 
       - name: Build Package Distributions
         run: poetry build
