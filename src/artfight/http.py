@@ -178,7 +178,7 @@ class HTTPClient:
                     elif response.status == 404:
                         raise error.NotFoundError(method, url)
                     elif response.status >= 500:
-                        raise error.ArtfightServerError(method, url)
+                        raise error.ArtfightServerError(method, url, response.status)
                     else:
                         raise error.HTTPResponseError(method, url, response.status)
 
@@ -191,7 +191,7 @@ class HTTPClient:
         if response is not None:
             # We've run out of retries, raise.
             if response.status >= 500:
-                raise error.ArtfightServerError(method, url)
+                raise error.ArtfightServerError(method, url, response.status)
             raise error.HTTPResponseError(method, url, response.status)
 
         raise RuntimeError("_RETRY_ATTEMPTS was < 1")
