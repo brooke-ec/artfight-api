@@ -62,6 +62,10 @@ class AttackListParser(BaseParser[Tuple[List["PartialAttack"], bool]]):
         # Extract List
         body: Tag = soup.select_one(".profile-attacks-body")  # type: ignore
         list = body.find("div", {"class": "row clearfix"})
+
+        if list is None:
+            return ([], True)
+
         attacks: ResultSet[Tag] = list.find_all("div", recursive=False)  # type: ignore
         for a in attacks:
             id = int(a.a.attrs.get("data-id"))  # type: ignore
